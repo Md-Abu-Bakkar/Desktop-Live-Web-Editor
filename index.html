@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Live Web Editor</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/codemirror.min.css">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/theme/material-darker.min.css">
+
+    <style>
+
+        :root {
+
+            --primary-color: #1a1d2b;
+
+            --secondary-color: #252a40;
+
+            --accent-color: #4a9eff;
+
+        }
+
+        * {
+
+            margin: 0;
+
+            padding: 0;
+
+            box-sizing: border-box;
+
+        }
+
+        body {
+
+            font-family: 'Segoe UI', sans-serif;
+
+            background: var(--primary-color);
+
+            color: #fff;
+
+            height: 100vh;
+
+            overflow: hidden;
+
+        }
+
+        .container {
+
+            display: flex;
+
+            gap: 15px;
+
+            height: 100vh;
+
+            padding: 15px;
+
+        }
+
+        .editor-container, .preview-container {
+
+            flex: 1;
+
+            background: var(--secondary-color);
+
+            border-radius: 12px;
+
+            overflow: hidden;
+
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+
+        }
+
+        .editor-header, .preview-header {
+
+            padding: 15px;
+
+            background: var(--primary-color);
+
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+
+            border-bottom: 2px solid rgba(255,255,255,0.1);
+
+        }
+
+        .header-title {
+
+            font-weight: 600;
+
+            font-size: 1.2rem;
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 10px;
+
+        }
+
+        .button-group {
+
+            display: flex;
+
+            gap: 10px;
+
+        }
+
+        .control-btn {
+
+            padding: 8px 15px;
+
+            background: rgba(255,255,255,0.1);
+
+            border: none;
+
+            border-radius: 6px;
+
+            color: #fff;
+
+            cursor: pointer;
+
+            transition: all 0.3s;
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 5px;
+
+        }
+
+        .control-btn:hover {
+
+            background: var(--accent-color);
+
+        }
+
+        .CodeMirror {
+
+            height: calc(100vh - 120px) !important;
+
+            font-family: 'Fira Code', monospace;
+
+            font-size: 14px;
+
+        }
+
+        #previewFrame {
+
+            width: 100%;
+
+            height: calc(100vh - 120px);
+
+            border: none;
+
+            background: white;
+
+        }
+
+        .sync-status {
+
+            position: fixed;
+
+            bottom: 20px;
+
+            left: 20px;
+
+            background: #4CAF50;
+
+            color: white;
+
+            padding: 8px 15px;
+
+            border-radius: 20px;
+
+            display: none;
+
+            animation: pulse 1.5s infinite;
+
+        }
+
+        @keyframes pulse {
+
+            0% { transform: scale(1); }
+
+            50% { transform: scale(1.05); }
+
+            100% { transform: scale(1); }
+
+        }
+
+        .live-edit-badge {
+
+            position: absolute;
+
+            top: 10px;
+
+            right: 10px;
+
+            background: #FF5722;
+
+            color: white;
+
+            padding: 3px 8px;
+
+            border-radius: 4px;
+
+            font-size: 0.8rem;
+
+        }
+
+        .virtual-keyboard {
+
+            position: fixed;
+
+            bottom: 20px;
+
+            right: 20px;
+
+            background: var(--secondary-color);
+
+            padding: 15px;
+
+            border-radius: 12px;
+
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+
+            display: none;
+
+            max-width: 600px;
+
+        }
+
+        .keyboard-grid {
+
+            display: grid;
+
+            grid-template-columns: repeat(4, 1fr);
+
+            gap: 8px;
+
+            margin-top: 10px;
+
+        }
+
+        .keyboard-key {
+
+            padding: 10px;
+
+            background: rgba(255,255,255,0.05);
+
+            border: 1px solid rgba(255,255,255,0.1);
+
+            border-radius: 6px;
+
+            color: #fff;
+
+            cursor: pointer;
+
+            transition: all 0.2s;
+
+            text-align: center;
+
+        }
+
+        .keyboard-key:hover {
+
+            background: var(--accent-color);
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <div class="container">
+
+        <div class="editor-container">
+
+            <div class="editor-header">
+
+                <div class="header-title">✏️ Code Editor</div>
+
+                <div class="button-group">
+
+                    <button class="btn" onclick="window.location.href='https://md-abu-bakkar.github.io/Mobile-Friendly-Web-Editor'">Android </button>
+
+    </div>
+
+                    <button class="control-btn" onclick="copyCode()">📋 Copy</button>
+
+                    <button class="control-btn" onclick="clearCode()">❌ Clear</button>
+
+                </div>
+
+            </div>
+
+            <textarea id="codeEditor"></textarea>
+
+        </div>
+
+        <div class="preview-container">
+
+            <div class="preview-header">
+
+                <div class="header-title">👁 Live Preview</div>
+
+                <div class="button-group">
+
+                    <button class="control-btn" onclick="toggleEditMode()">✏️ Toggle Edit</button>
+
+                </div>
+
+            </div>
+
+            <iframe id="previewFrame"></iframe>
+
+        </div>
+
+    </div>
+
+    <div class="sync-status" id="syncStatus">Changes Synced!</div>
+
+    <button class="control-btn" onclick="toggleKeyboard()" style="position:fixed;bottom:20px;right:20px">⌨️ Keyboard</button>
+
+    
+
+    <div class="virtual-keyboard" id="virtualKeyboard">
+
+        <div class="keyboard-grid">
+
+            <div class="keyboard-key" onclick="insertText('<div>')">&lt;div&gt;</div>
+
+            <div class="keyboard-key" onclick="insertText('<p>')">&lt;p&gt;</div>
+
+            <div class="keyboard-key" onclick="insertText('<h1>')">&lt;h1&gt;</div>
+
+            <div class="keyboard-key" onclick="insertText('<a href=\"#\">')">&lt;a&gt;</div>
+
+            <div class="keyboard-key" onclick="insertText('<img src=\"\">')">&lt;img&gt;</div>
+
+            <div class="keyboard-key" onclick="insertText('class=\"\"')">class</div>
+
+            <div class="keyboard-key" onclick="insertText('style=\"\"')">style</div>
+
+            <div class="keyboard-key" onclick="insertText('console.log()')">log()</div>
+
+        </div>
+
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/codemirror.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/mode/htmlmixed/htmlmixed.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/mode/css/css.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/mode/javascript/javascript.min.js"></script>
+
+    <script>
+
+        // Initialize Editor
+
+        const codeEditor = CodeMirror.fromTextArea(document.getElementById('codeEditor'), {
+
+            mode: "htmlmixed",
+
+            theme: "material-darker",
+
+            lineNumbers: true,
+
+            autoCloseTags: true,
+
+            matchBrackets: true
+
+        });
+
+        // Live Preview Setup
+
+        const previewFrame = document.getElementById('previewFrame');
+
+        
+
+        codeEditor.on("change", debounce(() => {
+
+            updatePreview();
+
+        }, 300));
+
+        function updatePreview() {
+
+            const code = codeEditor.getValue();
+
+            const preview = previewFrame.contentDocument || previewFrame.contentWindow.document;
+
+            preview.open();
+
+            preview.write(code);
+
+            preview.close();
+
+            if(preview.designMode === 'on') setupLiveEdit();
+
+        }
+
+        // Two-way Sync
+
+        function setupLiveEdit() {
+
+            const previewDoc = previewFrame.contentDocument;
+
+            previewDoc.body.addEventListener('input', handlePreviewEdit);
+
+            previewDoc.body.addEventListener('paste', handlePreviewEdit);
+
+        }
+
+        function handlePreviewEdit() {
+
+            const newContent = previewFrame.contentDocument.body.innerHTML;
+
+            codeEditor.setValue(`<html>
+
+<head>
+
+<style>
+
+/* Add your CSS here */
+
+</style>
+
+</head>
+
+<body>
+
+${newContent}
+
+</body>
+
+</html>`);
+
+            showSyncStatus();
+
+        }
+
+        // UI Functions
+
+        function toggleEditMode() {
+
+            const previewDoc = previewFrame.contentDocument;
+
+            previewDoc.designMode = previewDoc.designMode === 'on' ? 'off' : 'on';
+
+            if(previewDoc.designMode === 'on') {
+
+                previewDoc.body.contentEditable = true;
+
+                previewDoc.body.insertAdjacentHTML('beforeend', '<div class="live-edit-badge">LIVE EDITING ON</div>');
+
+                setupLiveEdit();
+
+            }
+
+        }
+
+        function toggleKeyboard() {
+
+            const keyboard = document.getElementById('virtualKeyboard');
+
+            keyboard.style.display = keyboard.style.display === 'none' ? 'grid' : 'none';
+
+        }
+
+        function insertText(text) {
+
+            codeEditor.replaceRange(text, codeEditor.getCursor());
+
+            codeEditor.focus();
+
+        }
+
+        function copyCode() {
+
+            navigator.clipboard.writeText(codeEditor.getValue());
+
+            alert('Code copied to clipboard!');
+
+        }
+
+        function clearCode() {
+
+            codeEditor.setValue('');
+
+            updatePreview();
+
+        }
+
+        function showSyncStatus() {
+
+            const status = document.getElementById('syncStatus');
+
+            status.style.display = 'block';
+
+            setTimeout(() => status.style.display = 'none', 1000);
+
+        }
+
+        function debounce(func, timeout = 300){
+
+            let timer;
+
+            return (...args) => {
+
+                clearTimeout(timer);
+
+                timer = setTimeout(() => { func.apply(this, args); }, timeout);
+
+            };
+
+        }
+
+        // Initial Setup
+
+        updatePreview();
+
+    </script>
+
+</body>
+
+  </html>
